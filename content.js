@@ -3,6 +3,8 @@ let isEnabled = true;
 let targetLanguage = 'ar';
 let apiKey = '';
 let translationRun = Promise.resolve();
+let originalRootAttributes;
+let pageObserver;
 
 chrome.storage.sync.get({ enabled: true, target: 'ar' }, (settings) => {
   isEnabled = settings.enabled;
@@ -45,6 +47,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 function startTranslation() {
   translationRun = translationRun.then(async () => {
     applyRTL();
+    observePage();
     const nodes = collectTextNodes(document.body).filter((node) => {
       const text = originalText.get(node) ?? node.nodeValue;
       return text && text.trim().length > 0;
@@ -56,29 +59,59 @@ function startTranslation() {
 }
 
 function applyRTL() {
+  if (!originalRootAttributes) {
+    originalRootAttributes = {
+      dir: document.documentElement.getAttribute('dir'),
+      lang: document.documentElement.getAttribute('lang'),
+    };
+  }
   document.documentElement.setAttribute('dir', 'rtl');
+  document.documentElement.setAttribute('lang', targetLanguage);
+}
+
+function observePage() {
+  if (!document.body) return;
+  if (!pageObserver) {
+    pageObserver = new MutationObserver((mutations) => {
+      if (!isEnabled) return;
+      const addedNodes = new Set();
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType === Node.TEXT_NODE) {
+            if (isTranslatableTextNode(node)) addedNodes.add(node);
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            for (const textNode of collectTextNodes(node)) addedNodes.add(textNode);
+          }
+        }
+      }
+      if (addedNodes.size > 0) {
+        translationRun = translationRun.then(() => translateNodes([...addedNodes]));
+      }
+    });
+  }
+  pageObserver.observe(document.body, { childList: true, subtree: true });
 }
 
 function restorePage() {
+  pageObserver?.disconnect();
   for (const [node, text] of originalText) {
     if (node.isConnected) node.nodeValue = text;
   }
   originalText.clear();
-  document.documentElement.removeAttribute('dir');
+  if (originalRootAttributes) {
+    for (const [attribute, value] of Object.entries(originalRootAttributes)) {
+      if (value === null) document.documentElement.removeAttribute(attribute);
+      else document.documentElement.setAttribute(attribute, value);
+    }
+    originalRootAttributes = undefined;
+  }
 }
 
 function collectTextNodes(root) {
   if (!root) return [];
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
-      const parent = node.parentElement;
-      if (!parent || parent.closest('script, style, noscript, textarea, input, code, pre, svg, [contenteditable="true"]')) {
-        return NodeFilter.FILTER_REJECT;
-      }
-      if (!node.nodeValue.trim() || parent.getClientRects().length === 0) {
-        return NodeFilter.FILTER_REJECT;
-      }
-      return NodeFilter.FILTER_ACCEPT;
+      return isTranslatableTextNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
     },
   });
   const nodes = [];
@@ -86,12 +119,30 @@ function collectTextNodes(root) {
   return nodes;
 }
 
+function isTranslatableTextNode(node) {
+  const parent = node.parentElement;
+  return Boolean(
+    parent &&
+    !parent.closest('script, style, noscript, textarea, input, code, pre, svg, [contenteditable="true"]') &&
+    node.nodeValue.trim() &&
+    parent.getClientRects().length > 0
+  );
+}
+
 async function translateNodes(nodes) {
   let translated = 0;
   let failed = 0;
   const pending = nodes.map((node) => {
     if (!originalText.has(node)) originalText.set(node, node.nodeValue);
-    return { node, text: originalText.get(node) };
+    const text = originalText.get(node);
+    const leadingWhitespace = text.match(/^\s*/u)[0];
+    const trailingWhitespace = text.match(/\s*$/u)[0];
+    return {
+      node,
+      text: text.slice(leadingWhitespace.length, text.length - trailingWhitespace.length),
+      leadingWhitespace,
+      trailingWhitespace,
+    };
   });
 
   if (apiKey) {
@@ -100,8 +151,8 @@ async function translateNodes(nodes) {
       try {
         const results = await translateWithCloud(batch.map((entry) => entry.text));
         batch.forEach((entry, index) => {
-          if (entry.node.isConnected && results[index]) {
-            entry.node.nodeValue = results[index];
+          if (isEnabled && entry.node.isConnected && results[index]) {
+            entry.node.nodeValue = `${entry.leadingWhitespace}${results[index]}${entry.trailingWhitespace}`;
             translated++;
           }
         });
@@ -116,8 +167,8 @@ async function translateNodes(nodes) {
         const entry = pending[cursor++];
         try {
           const result = await translateWithPublicEndpoint(entry.text);
-          if (entry.node.isConnected && result) {
-            entry.node.nodeValue = result;
+          if (isEnabled && entry.node.isConnected && result) {
+            entry.node.nodeValue = `${entry.leadingWhitespace}${result}${entry.trailingWhitespace}`;
             translated++;
           }
         } catch {
