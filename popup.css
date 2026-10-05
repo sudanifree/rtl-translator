@@ -1,0 +1,149 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+
+:root {
+  color-scheme: light;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  background: #f3f6f4;
+  color: #172c27;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 330px;
+  margin: 0;
+}
+
+.panel {
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #d9e2dd;
+  margin-bottom: 16px;
+}
+
+.mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 10px;
+  background: #146b56;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.header p {
+  margin: 2px 0 0;
+  color: #60736c;
+  font-size: 12px;
+}
+
+.field-label {
+  display: block;
+  margin: 0 0 6px;
+  color: #52655e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+select,
+input[type='password'] {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #cbd7d1;
+  border-radius: 6px;
+  background: #fff;
+  color: #172c27;
+  font: inherit;
+  padding: 0 10px;
+}
+
+.switch-row {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0 10px;
+  font-size: 13px;
+}
+
+input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: #146b56;
+}
+
+button {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: #146b56;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+button:hover {
+  background: #0e5846;
+}
+
+details {
+  margin-top: 14px;
+  border-top: 1px solid #d9e2dd;
+  padding-top: 12px;
+}
+
+summary {
+  color: #52655e;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+details .field-label {
+  margin-top: 12px;
+}
+
+.secondary {
+  min-height: 34px;
+  margin-top: 8px;
+  border: 1px solid #cbd7d1;
+  background: transparent;
+  color: #146b56;
+  font-size: 12px;
+}
+
+.secondary:hover {
+  background: #e7efeb;
+}
+
+#status {
+  min-height: 18px;
+  margin: 12px 0 0;
+  color: #60736c;
+  font-size: 11px;
+  line-height: 1.5;
+}

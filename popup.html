@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>مترجم RTL</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="panel">
+      <header class="header">
+        <span class="mark" aria-hidden="true">ع</span>
+        <div>
+          <h1>مترجم RTL</h1>
+          <p>ترجمة الصفحة واتجاهها</p>
+        </div>
+      </header>
+
+      <label class="field-label" for="language">الترجمة إلى</label>
+      <select id="language">
+        <option value="ar">العربية</option>
+        <option value="fa">الفارسية</option>
+        <option value="he">العبرية</option>
+        <option value="ur">الأردية</option>
+      </select>
+
+      <label class="switch-row" for="enabled">
+        <span>ترجمة المواقع تلقائياً</span>
+        <input id="enabled" type="checkbox">
+      </label>
+
+      <button id="translate" type="button">
+        <span aria-hidden="true">文</span>
+        ترجمة هذه الصفحة
+      </button>
+
+      <details>
+        <summary>إعداد مفتاح Google Cloud</summary>
+        <label class="field-label" for="api-key">مفتاح Translation API</label>
+        <input id="api-key" type="password" autocomplete="off" placeholder="اختياري">
+        <button id="save-key" class="secondary" type="button">حفظ المفتاح</button>
+      </details>
+
+      <p id="status" role="status" aria-live="polite">جاهز</p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

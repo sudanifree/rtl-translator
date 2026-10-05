@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "RTL Translator",
+  "version": "1.0.0",
+  "description": "Translate webpages with Google Translate and switch them to right-to-left layout.",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "<all_urls>",
+    "https://translate.googleapis.com/*",
+    "https://translation.googleapis.com/*"
+  ],
+  "action": {
+    "default_title": "RTL Translator",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
