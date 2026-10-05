@@ -1,49 +1,51 @@
 const originalText = new Map();
 const originalDirections = new Map();
 let isEnabled = true;
-let targetLanguage = 'ar';
+const targetLanguage = 'ar';
 let apiKey = '';
 let translationRun = Promise.resolve();
 let originalRootAttributes;
 let pageObserver;
 
-chrome.storage.sync.get({ enabled: true, target: 'ar' }, (settings) => {
-  isEnabled = settings.enabled;
-  targetLanguage = settings.target;
-  if (isEnabled) startTranslation();
-  else restorePage();
-});
+const chromeApi = typeof chrome !== 'undefined' ? chrome : null;
 
-chrome.storage.local.get({ apiKey: '' }, (settings) => {
-  apiKey = settings.apiKey;
-});
+if (chromeApi?.storage && chromeApi?.runtime && typeof document !== 'undefined') {
+  chromeApi.storage.sync?.get({ enabled: true }, (settings) => {
+    isEnabled = settings.enabled;
+    if (isEnabled) startTranslation();
+    else restorePage();
+  });
 
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync') {
-    if (changes.enabled) isEnabled = changes.enabled.newValue;
-    if (changes.target) targetLanguage = changes.target.newValue;
-  }
-  if (area === 'local' && changes.apiKey) apiKey = changes.apiKey.newValue || '';
-});
+  chromeApi.storage.local?.get({ apiKey: '' }, (settings) => {
+    apiKey = settings.apiKey;
+  });
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === 'DISABLE') {
-    isEnabled = false;
-    restorePage();
-    sendResponse({ translated: 0, failed: 0 });
-    return;
-  }
-  if (message.type === 'CONFIG_CHANGED') {
-    isEnabled = true;
-    startTranslation().then(sendResponse);
-    return true;
-  }
-  if (message.type === 'TRANSLATE') {
-    isEnabled = true;
-    startTranslation().then(sendResponse);
-    return true;
-  }
-});
+  chromeApi.storage.onChanged?.addListener((changes, area) => {
+    if (area === 'sync') {
+      if (changes.enabled) isEnabled = changes.enabled.newValue;
+    }
+    if (area === 'local' && changes.apiKey) apiKey = changes.apiKey.newValue || '';
+  });
+
+  chromeApi.runtime.onMessage?.addListener((message, _sender, sendResponse) => {
+    if (message.type === 'DISABLE') {
+      isEnabled = false;
+      restorePage();
+      sendResponse({ translated: 0, failed: 0 });
+      return;
+    }
+    if (message.type === 'CONFIG_CHANGED') {
+      isEnabled = true;
+      startTranslation().then(sendResponse);
+      return true;
+    }
+    if (message.type === 'TRANSLATE') {
+      isEnabled = true;
+      startTranslation().then(sendResponse);
+      return true;
+    }
+  });
+}
 
 function startTranslation() {
   translationRun = translationRun.then(async () => {
@@ -96,7 +98,10 @@ function observePage() {
 }
 
 function restorePage() {
-  pageObserver?.disconnect();
+  if (pageObserver) {
+    pageObserver.disconnect();
+    pageObserver = undefined;
+  }
   for (const [node, text] of originalText) {
     if (node.isConnected) node.nodeValue = text;
   }
