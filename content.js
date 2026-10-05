@@ -1,4 +1,5 @@
 const originalText = new Map();
+const originalDirections = new Map();
 let isEnabled = true;
 let targetLanguage = 'ar';
 let apiKey = '';
@@ -67,6 +68,7 @@ function applyRTL() {
   }
   document.documentElement.setAttribute('dir', 'rtl');
   document.documentElement.setAttribute('lang', targetLanguage);
+  applyTechnicalDirections(document.body);
 }
 
 function observePage() {
@@ -80,6 +82,7 @@ function observePage() {
           if (node.nodeType === Node.TEXT_NODE) {
             if (isTranslatableTextNode(node)) addedNodes.add(node);
           } else if (node.nodeType === Node.ELEMENT_NODE) {
+            applyTechnicalDirections(node);
             for (const textNode of collectTextNodes(node)) addedNodes.add(textNode);
           }
         }
@@ -98,6 +101,12 @@ function restorePage() {
     if (node.isConnected) node.nodeValue = text;
   }
   originalText.clear();
+  for (const [element, direction] of originalDirections) {
+    if (!element.isConnected) continue;
+    if (direction === null) element.removeAttribute('dir');
+    else element.setAttribute('dir', direction);
+  }
+  originalDirections.clear();
   if (originalRootAttributes) {
     for (const [attribute, value] of Object.entries(originalRootAttributes)) {
       if (value === null) document.documentElement.removeAttribute(attribute);
@@ -105,6 +114,21 @@ function restorePage() {
     }
     originalRootAttributes = undefined;
   }
+}
+
+function applyTechnicalDirections(root) {
+  if (!root) return;
+  if (root.matches?.('code, pre, kbd, samp')) setDirection(root, 'ltr');
+  root.querySelectorAll?.('code, pre, kbd, samp').forEach((element) => {
+    setDirection(element, 'ltr');
+  });
+}
+
+function setDirection(element, direction) {
+  if (!originalDirections.has(element)) {
+    originalDirections.set(element, element.getAttribute('dir'));
+  }
+  element.setAttribute('dir', direction);
 }
 
 function collectTextNodes(root) {
@@ -152,6 +176,7 @@ async function translateNodes(nodes) {
         const results = await translateWithCloud(batch.map((entry) => entry.text));
         batch.forEach((entry, index) => {
           if (isEnabled && entry.node.isConnected && results[index]) {
+            setDirection(entry.node.parentElement, 'rtl');
             entry.node.nodeValue = `${entry.leadingWhitespace}${results[index]}${entry.trailingWhitespace}`;
             translated++;
           }
@@ -168,6 +193,7 @@ async function translateNodes(nodes) {
         try {
           const result = await translateWithPublicEndpoint(entry.text);
           if (isEnabled && entry.node.isConnected && result) {
+            setDirection(entry.node.parentElement, 'rtl');
             entry.node.nodeValue = `${entry.leadingWhitespace}${result}${entry.trailingWhitespace}`;
             translated++;
           }

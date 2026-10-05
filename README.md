@@ -1,6 +1,6 @@
 # RTL Translator
 
-A Chrome Manifest V3 extension that translates webpages into Arabic with Google Translate and switches the page language and direction to Arabic and right-to-left. It runs automatically on regular webpages, translates newly added page content, and also supports manual translation from the toolbar popup. Disabling translation restores the original page text, language, and direction.
+A Chrome Manifest V3 extension that translates webpages into Arabic with Google Translate and switches the page language and direction to Arabic and right-to-left. It runs automatically on regular webpages, translates newly added page content, and also supports manual translation from the toolbar popup. Translated text is explicitly right-to-left, while code and other technical snippets remain left-to-right. Disabling translation restores the original page text, language, and direction.
 
 ## Load in Chrome
 
